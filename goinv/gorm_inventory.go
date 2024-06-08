@@ -5,7 +5,6 @@ package goinv
 import (
 	"os"
 
-	"github.com/charmbracelet/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -18,9 +17,6 @@ func NewGormInventory() (*GormInventory, error) {
 	db_file := "inventory.db"
 	if os.Getenv("ENV") == "test" {
 		db_file = "test.db"
-		if err := os.Remove(db_file); err != nil {
-			log.Errorf("Failed to remove test database: %v", err)
-		}
 	}
 
 	db, err := gorm.Open(sqlite.Open(db_file), &gorm.Config{})
@@ -28,7 +24,7 @@ func NewGormInventory() (*GormInventory, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&StorageLocation{}, &Item{})
+	db.AutoMigrate(&Item{})
 	return &GormInventory{db: db}, nil
 }
 
@@ -60,38 +56,10 @@ func (g *GormInventory) GetItemsByCategory(category string) ([]Item, error) {
 	return items, nil
 }
 
-func (g *GormInventory) CreateStorageLocation(location StorageLocation) error {
-	return g.db.Create(&location).Error
-}
-
-func (g *GormInventory) GetStorageLocations() ([]StorageLocation, error) {
-	var locations []StorageLocation
-	if err := g.db.Find(&locations).Error; err != nil {
-		return nil, err
-	}
-	return locations, nil
-}
-
-func (g *GormInventory) GetItemsByStorageLocation(locationID uint) ([]Item, error) {
+func (g *GormInventory) GetItemsByLocation(location string) ([]Item, error) {
 	var items []Item
-	if err := g.db.Where("location_id = ?", locationID).Find(&items).Error; err != nil {
+	if err := g.db.Where("location = ?", location).Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
-}
-
-func (g *GormInventory) Populate(items []Item, locs []StorageLocation) error {
-	for _, location := range locs {
-		if err := g.CreateStorageLocation(location); err != nil {
-			return err
-		}
-	}
-
-	for _, item := range items {
-		if err := g.CreateItem(item); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

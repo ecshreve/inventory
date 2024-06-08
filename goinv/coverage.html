@@ -55,13 +55,11 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">goinv/gorm_inventory.go (78.4%)</option>
+				<option value="file0">goinv/gorm_inventory.go (82.6%)</option>
 				
 				<option value="file1">goinv/item.go (100.0%)</option>
 				
-				<option value="file2">goinv/mock_inventory.go (91.9%)</option>
-				
-				<option value="file3">goinv/storage.go (100.0%)</option>
+				<option value="file2">goinv/mock_inventory.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -82,7 +80,6 @@ package goinv
 import (
         "os"
 
-        "github.com/charmbracelet/log"
         "gorm.io/driver/sqlite"
         "gorm.io/gorm"
 )
@@ -95,17 +92,14 @@ func NewGormInventory() (*GormInventory, error) <span class="cov8" title="1">{
         db_file := "inventory.db"
         if os.Getenv("ENV") == "test" </span><span class="cov8" title="1">{
                 db_file = "test.db"
-                if err := os.Remove(db_file); err != nil </span><span class="cov0" title="0">{
-                        log.Errorf("Failed to remove test database: %v", err)
-                }</span>
-        }
+        }</span>
 
         <span class="cov8" title="1">db, err := gorm.Open(sqlite.Open(db_file), &amp;gorm.Config{})
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov8" title="1">db.AutoMigrate(&amp;StorageLocation{}, &amp;Item{})
+        <span class="cov8" title="1">db.AutoMigrate(&amp;Item{})
         return &amp;GormInventory{db: db}, nil</span>
 }
 
@@ -137,40 +131,12 @@ func (g *GormInventory) GetItemsByCategory(category string) ([]Item, error) <spa
         <span class="cov8" title="1">return items, nil</span>
 }
 
-func (g *GormInventory) CreateStorageLocation(location StorageLocation) error <span class="cov8" title="1">{
-        return g.db.Create(&amp;location).Error
-}</span>
-
-func (g *GormInventory) GetStorageLocations() ([]StorageLocation, error) <span class="cov8" title="1">{
-        var locations []StorageLocation
-        if err := g.db.Find(&amp;locations).Error; err != nil </span><span class="cov0" title="0">{
-                return nil, err
-        }</span>
-        <span class="cov8" title="1">return locations, nil</span>
-}
-
-func (g *GormInventory) GetItemsByStorageLocation(locationID uint) ([]Item, error) <span class="cov8" title="1">{
+func (g *GormInventory) GetItemsByLocation(location string) ([]Item, error) <span class="cov8" title="1">{
         var items []Item
-        if err := g.db.Where("location_id = ?", locationID).Find(&amp;items).Error; err != nil </span><span class="cov0" title="0">{
+        if err := g.db.Where("location = ?", location).Find(&amp;items).Error; err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
         <span class="cov8" title="1">return items, nil</span>
-}
-
-func (g *GormInventory) Populate(items []Item, locs []StorageLocation) error <span class="cov8" title="1">{
-        for _, location := range locs </span><span class="cov8" title="1">{
-                if err := g.CreateStorageLocation(location); err != nil </span><span class="cov0" title="0">{
-                        return err
-                }</span>
-        }
-
-        <span class="cov8" title="1">for _, item := range items </span><span class="cov8" title="1">{
-                if err := g.CreateItem(item); err != nil </span><span class="cov0" title="0">{
-                        return err
-                }</span>
-        }
-
-        <span class="cov8" title="1">return nil</span>
 }
 </pre>
 		
@@ -179,12 +145,11 @@ func (g *GormInventory) Populate(items []Item, locs []StorageLocation) error <sp
 import "fmt"
 
 type Item struct {
-        ID         uint            `json:"id" gorm:"primaryKey"`
-        Name       string          `json:"name"`
-        Qty        uint            `json:"qty"`
-        Category   ItemCategory    `json:"category"`
-        LocationID uint            `json:"location_id"`
-        Location   StorageLocation `json:"-" gorm:"foreignKey:LocationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+        ID       uint            `json:"id" gorm:"primaryKey"`
+        Name     string          `json:"name"`
+        Qty      uint            `json:"qty"`
+        Category ItemCategory    `json:"category"`
+        Location StorageLocation `json:"location"`
 }
 
 // String implements the fmt.Stringer interface for Item
@@ -195,11 +160,19 @@ func (i Item) String() string <span class="cov8" title="1">{
 type ItemCategory string
 
 const (
-        Cable   ItemCategory = "Cable"
-        Adapter ItemCategory = "Adapter"
-        Device  ItemCategory = "Device"
-        Misc    ItemCategory = "Misc"
-        Unknown ItemCategory = "Unknown"
+        Cable   ItemCategory = "CABLE"
+        Adapter ItemCategory = "ADAPTER"
+        Device  ItemCategory = "DEVICE"
+        Misc    ItemCategory = "MISC"
+        Unknown ItemCategory = "UNKNOWN"
+)
+
+type StorageLocation string
+
+const (
+        HalfCrate_White_1 StorageLocation = "HalfCrate_White_1"
+        HalfCrate_White_2 StorageLocation = "HalfCrate_White_2"
+        FullCrate_Black_1 StorageLocation = "FullCrate_Black_1"
 )
 </pre>
 		
@@ -260,62 +233,15 @@ func (m *MockInventory) GetItemsByCategory(category string) ([]Item, error) <spa
         <span class="cov8" title="1">return items, nil</span>
 }
 
-func (m *MockInventory) CreateStorageLocation(location StorageLocation) error <span class="cov8" title="1">{
-        m.StorageLocations = append(m.StorageLocations, location)
-        return nil
-}</span>
-
-func (m *MockInventory) GetStorageLocations() ([]StorageLocation, error) <span class="cov8" title="1">{
-        return m.StorageLocations, nil
-}</span>
-
-func (m *MockInventory) GetItemsByStorageLocation(locationID uint) ([]Item, error) <span class="cov8" title="1">{
-        for _, location := range m.StorageLocations </span><span class="cov8" title="1">{
-                if location.ID == locationID </span><span class="cov8" title="1">{
-                        var items []Item
-                        for _, item := range m.Items </span><span class="cov8" title="1">{
-                                if item.LocationID == locationID </span><span class="cov8" title="1">{
-                                        items = append(items, item)
-                                }</span>
-                        }
-                        <span class="cov8" title="1">return items, nil</span>
-                }
-        }
-
-        <span class="cov0" title="0">return nil, fmt.Errorf("location not found")</span>
-}
-
-func (m *MockInventory) Populate(items []Item, locs []StorageLocation) error <span class="cov8" title="1">{
-        for _, location := range locs </span><span class="cov8" title="1">{
-                if err := m.CreateStorageLocation(location); err != nil </span><span class="cov0" title="0">{
-                        return err
+func (m *MockInventory) GetItemsByLocation(location string) ([]Item, error) <span class="cov8" title="1">{
+        var items []Item
+        for _, item := range m.Items </span><span class="cov8" title="1">{
+                if string(item.Location) == location </span><span class="cov8" title="1">{
+                        items = append(items, item)
                 }</span>
         }
-
-        <span class="cov8" title="1">for _, item := range items </span><span class="cov8" title="1">{
-                if err := m.CreateItem(item); err != nil </span><span class="cov0" title="0">{
-                        return err
-                }</span>
-        }
-
-        <span class="cov8" title="1">return nil</span>
+        <span class="cov8" title="1">return items, nil</span>
 }
-</pre>
-		
-		<pre class="file" id="file3" style="display: none">package goinv
-
-// StorageLocation represents a location where items are stored
-// in an inventory system.
-type StorageLocation struct {
-        ID          uint   `json:"id" gorm:"primaryKey"`
-        Description string `json:"description"`
-        Location    string `json:"location"`
-}
-
-// String implements the fmt.Stringer interface for StorageLocation.
-func (s StorageLocation) String() string <span class="cov8" title="1">{
-        return s.Description + " (" + s.Location + ")"
-}</span>
 </pre>
 		
 		</div>

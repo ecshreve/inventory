@@ -16,16 +16,15 @@ func setupMockInventory() *goinv.MockInventory {
 func TestIntegration_CreateUpdateDeleteItem(t *testing.T) {
 	mockInv := setupMockInventory()
 
+	mockLocation := goinv.StorageLocation("MockLocation")
+
 	// Create Item
 	item := goinv.Item{
 		ID:       1,
 		Name:     "Test Item",
 		Category: goinv.Misc,
 		Qty:      5,
-		Location: goinv.StorageLocation{
-			Description: "Test Location",
-			Location:    "Test Room",
-		},
+		Location: "Test Location",
 	}
 
 	if err := mockInv.CreateItem(item); err != nil {
@@ -39,8 +38,9 @@ func TestIntegration_CreateUpdateDeleteItem(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("Expected 1 item, got %d", len(items))
 	}
-	if fmt.Sprintf("%v", items[0]) != "Test Item (Misc) x5 -- Test Location (Test Room)" {
-		t.Fatalf("Expected item to be 'Test Item (Misc) x5 -- Test Location (Test Room)', got '%s'", items[0])
+	expectedItem := "Test Item (MISC) x5 -- Test Location"
+	if fmt.Sprintf("%v", items[0]) != expectedItem {
+		t.Fatalf("Expected item to be '%s', got '%s'", expectedItem, items[0])
 	}
 
 	// Update Item
@@ -49,10 +49,7 @@ func TestIntegration_CreateUpdateDeleteItem(t *testing.T) {
 		Name:     "Updated Item",
 		Category: goinv.Device,
 		Qty:      10,
-		Location: goinv.StorageLocation{
-			Description: "Updated Location",
-			Location:    "Updated Room",
-		},
+		Location: mockLocation,
 	}
 
 	// Attempt to update item with non-existent ID
@@ -100,134 +97,73 @@ func TestIntegration_CreateUpdateDeleteItem(t *testing.T) {
 func TestIntegration_GetItemsByCategory(t *testing.T) {
 	mockInv := setupMockInventory()
 
-	item1 := goinv.Item{
-		ID:       1,
-		Name:     "Test Item 1",
-		Category: goinv.Misc,
-		Qty:      5,
-		Location: goinv.StorageLocation{
-			Description: "Test Location",
-			Location:    "Test Room",
+	items := []goinv.Item{
+		{
+			ID:       1,
+			Name:     "Test Item 1",
+			Category: goinv.Misc,
+			Qty:      5,
+			Location: "Test Location",
+		},
+		{
+			ID:       2,
+			Name:     "Test Item 2",
+			Category: goinv.Device,
+			Qty:      10,
+			Location: "Test Location",
 		},
 	}
 
-	item2 := goinv.Item{
-		ID:       2,
-		Name:     "Test Item 2",
-		Category: goinv.Device,
-		Qty:      10,
-		Location: goinv.StorageLocation{
-			Description: "Test Location",
-			Location:    "Test Room",
-		},
+	// Create Items
+	for _, item := range items {
+		if err := mockInv.CreateItem(item); err != nil {
+			t.Fatalf("Failed to create item: %v", err)
+		}
 	}
 
-	if err := mockInv.CreateItem(item1); err != nil {
-		t.Fatalf("Failed to create item1: %v", err)
-	}
-
-	if err := mockInv.CreateItem(item2); err != nil {
-		t.Fatalf("Failed to create item2: %v", err)
-	}
-
-	items, err := mockInv.GetItemsByCategory(string(goinv.Device))
+	deviceItems, err := mockInv.GetItemsByCategory(string(goinv.Device))
 	if err != nil {
 		t.Fatalf("Failed to get items by category: %v", err)
 	}
 
-	if len(items) != 1 {
-		t.Fatalf("Expected 1 item, got %d", len(items))
+	if len(deviceItems) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(deviceItems))
 	}
 }
 
-func TestIntegration_GetItemsByStorageLocation(t *testing.T) {
+func TestIntegration_GetItemsByLocation(t *testing.T) {
 	mockInv := setupMockInventory()
-
-	loc := goinv.StorageLocation{
-		ID:          1,
-		Description: "Test Location",
-		Location:    "Test Room",
-	}
-
-	item1 := goinv.Item{
-		ID:         1,
-		Name:       "Test Item 1",
-		Category:   goinv.Misc,
-		Qty:        5,
-		LocationID: loc.ID,
-	}
-
-	item2 := goinv.Item{
-		ID:         2,
-		Name:       "Test Item 2",
-		Category:   goinv.Device,
-		Qty:        10,
-		LocationID: loc.ID,
-	}
-
-	if err := mockInv.CreateStorageLocation(loc); err != nil {
-		t.Fatalf("Failed to create storage location: %v", err)
-	}
-
-	if err := mockInv.CreateItem(item1); err != nil {
-		t.Fatalf("Failed to create item1: %v", err)
-	}
-
-	if err := mockInv.CreateItem(item2); err != nil {
-		t.Fatalf("Failed to create item2: %v", err)
-	}
-
-	items, err := mockInv.GetItemsByStorageLocation(loc.ID)
-	if err != nil {
-		t.Fatalf("Failed to get items by storage location: %v", err)
-	}
-
-	if len(items) != 2 {
-		t.Fatalf("Expected 2 items, got %d", len(items))
-	}
-}
-
-func TestIntegration_Populate(t *testing.T) {
-	mockInv := setupMockInventory()
-
-	locs := []goinv.StorageLocation{
-		{ID: 1, Description: "MockDescription", Location: "MockLocation"},
-	}
 
 	items := []goinv.Item{
 		{
-			ID:         1,
-			Name:       "MockItem",
-			Category:   goinv.Misc,
-			Qty:        5,
-			LocationID: locs[0].ID,
-			Location:   locs[0],
+			ID:       1,
+			Name:     "Test Item 1",
+			Category: goinv.Misc,
+			Qty:      5,
+			Location: "Test Location",
+		},
+		{
+			ID:       2,
+			Name:     "Test Item 2",
+			Category: goinv.Device,
+			Qty:      10,
+			Location: "Test Location",
 		},
 	}
 
-	if err := mockInv.Populate(items, locs); err != nil {
-		t.Fatalf("Failed to populate storage locations and items: %v", err)
+	// Create Items
+	for _, item := range items {
+		if err := mockInv.CreateItem(item); err != nil {
+			t.Fatalf("Failed to create item: %v", err)
+		}
 	}
 
-	locations, err := mockInv.GetStorageLocations()
+	locationItems, err := mockInv.GetItemsByLocation("Test Location")
 	if err != nil {
-		t.Fatalf("Failed to get storage locations: %v", err)
+		t.Fatalf("Failed to get items by location: %v", err)
 	}
 
-	if len(locations) != 1 {
-		t.Fatalf("Expected 1 location, got %d", len(locations))
-	}
-
-	populatedItems, err := mockInv.GetItems()
-	if err != nil {
-		t.Fatalf("Failed to get items: %v", err)
-	}
-
-	if len(populatedItems) != 1 {
-		t.Fatalf("Expected 1 item, got %d", len(populatedItems))
-	}
-
-	if populatedItems[0].LocationID != locs[0].ID {
-		t.Fatalf("Expected item location ID to be %d, got %d", locs[0].ID, populatedItems[0].LocationID)
+	if len(locationItems) != 2 {
+		t.Fatalf("Expected 2 items, got %d", len(locationItems))
 	}
 }

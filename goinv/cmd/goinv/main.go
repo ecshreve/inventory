@@ -24,18 +24,6 @@ func main() {
 		log.Fatal("Failed to initialize inventory:", err)
 	}
 
-	locs := []goinv.StorageLocation{
-		{Description: "HalfCrate_White_1", Location: "Office"},
-		{Description: "HalfCrate_White_2", Location: "Office"},
-		{Description: "FullCrate_Black_1", Location: "Office"},
-	}
-
-	items := []goinv.Item{}
-
-	if err := inventory.Populate(items, locs); err != nil {
-		log.Fatal("Failed to populate storage locations:", err)
-	}
-
 	r := gin.Default()
 
 	r.GET("/items", getItems)
@@ -123,13 +111,7 @@ func getItemsByCategory(c *gin.Context) {
 
 func getItemsByLocation(c *gin.Context) {
 	location := c.Param("location")
-	locationID, err := strconv.ParseUint(location, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid location"})
-		return
-	}
-
-	items, err := inventory.GetItemsByStorageLocation(uint(locationID))
+	items, err := inventory.GetItemsByLocation(location)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return
