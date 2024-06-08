@@ -55,11 +55,15 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">goinv/gorm_inventory.go (86.5%)</option>
+				<option value="file0">goinv/gorm_inventory.go (87.5%)</option>
 				
-				<option value="file1">goinv/item.go (100.0%)</option>
+				<option value="file1">goinv/helpers.go (73.1%)</option>
 				
-				<option value="file2">goinv/mock_inventory.go (97.5%)</option>
+				<option value="file2">goinv/item.go (100.0%)</option>
+				
+				<option value="file3">goinv/mock_inventory.go (97.5%)</option>
+				
+				<option value="file4">goinv/server.go (0.0%)</option>
 				
 				</select>
 			</div>
@@ -106,6 +110,7 @@ func NewGormInventory() (*GormInventory, error) <span class="cov8" title="1">{
 }
 
 func (g *GormInventory) CreateItem(item Item) error <span class="cov8" title="1">{
+        log.Info("CreateItem")
         return g.db.Create(&amp;item).Error
 }</span>
 
@@ -119,10 +124,12 @@ func (g *GormInventory) GetItems() ([]Item, error) <span class="cov8" title="1">
 }
 
 func (g *GormInventory) UpdateItem(id uint, newItem Item) error <span class="cov8" title="1">{
+        log.Info("UpdateItem")
         return g.db.Model(&amp;Item{}).Where("id = ?", id).Updates(newItem).Error
 }</span>
 
 func (g *GormInventory) DeleteItem(id uint) error <span class="cov8" title="1">{
+        log.Info("DeleteItem")
         return g.db.Delete(&amp;Item{}, id).Error
 }</span>
 
@@ -163,6 +170,75 @@ func (g *GormInventory) GetItemsWithFilter(filter ItemFilter) ([]Item, error) <s
 		
 		<pre class="file" id="file1" style="display: none">package goinv
 
+import (
+        "encoding/csv"
+        "fmt"
+        "io"
+        "os"
+        "strconv"
+        "strings"
+)
+
+func ParseInventoryCSV(filename string) ([]Item, error) <span class="cov8" title="1">{
+        file, err := os.Open(filename)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to open file: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer file.Close()
+
+        reader := csv.NewReader(file)
+        var items []Item
+
+        // Skip the header
+        if _, err := reader.Read(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to read header: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">for </span><span class="cov8" title="1">{
+                record, err := reader.Read()
+                if err == io.EOF </span><span class="cov8" title="1">{
+                        break</span>
+                }
+                <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("error reading record: %w", err)
+                }</span>
+
+                <span class="cov8" title="1">quantity, err := strconv.Atoi(record[2])
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("invalid quantity: %w", err)
+                }</span>
+
+                <span class="cov8" title="1">item := Item{
+                        Name:     record[1],
+                        Qty:      uint(quantity),
+                        Category: ParseItemCategory(record[0]),
+                        Location: StorageLocation(record[3]),
+                }
+
+                items = append(items, item)</span>
+        }
+
+        <span class="cov8" title="1">return items, nil</span>
+}
+
+func ParseItemCategory(category string) ItemCategory <span class="cov8" title="1">{
+        switch strings.ToLower(category) </span>{
+        case "cable":<span class="cov8" title="1">
+                return Cable</span>
+        case "adapter":<span class="cov0" title="0">
+                return Adapter</span>
+        case "device":<span class="cov8" title="1">
+                return Device</span>
+        case "battery":<span class="cov0" title="0">
+                return Misc</span>
+        default:<span class="cov0" title="0">
+                return Unknown</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package goinv
+
 import "fmt"
 
 type Item struct {
@@ -178,6 +254,11 @@ func (i Item) String() string <span class="cov8" title="1">{
         return fmt.Sprintf("%s (%v) x%d -- %v", i.Name, i.Category, i.Qty, i.Location)
 }</span>
 
+type ItemFilter struct {
+        Category string
+        Location string
+}
+
 type ItemCategory string
 
 const (
@@ -191,13 +272,17 @@ const (
 type StorageLocation string
 
 const (
-        half_crate_white_1 StorageLocation = "half_crate_white_1"
-        half_crate_white_2 StorageLocation = "half_crate_white_2"
-        full_crate_black_1 StorageLocation = "full_crate_black_1"
+        HalfCrate_White_1 StorageLocation = "half_crate_white_1"
+        HalfCrate_White_2 StorageLocation = "half_crate_white_2"
+        FullCrate_Black_1 StorageLocation = "full_crate_black_1"
+        FullCrate_Black_2 StorageLocation = "full_crate_black_2"
+        FullCrate_Gray_1  StorageLocation = "full_crate_gray_1"
+        HalfCrate_Gray_1  StorageLocation = "half_crate_gray_1"
+        HalfCrate_Gray_2  StorageLocation = "half_crate_gray_2"
 )
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">// goinv/mock_inventory.go
+		<pre class="file" id="file3" style="display: none">// goinv/mock_inventory.go
 
 package goinv
 
@@ -288,6 +373,114 @@ func (m *MockInventory) GetItemsWithFilter(filter ItemFilter) ([]Item, error) <s
                 <span class="cov8" title="1">items = append(items, item)</span>
         }
         <span class="cov8" title="1">return items, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package goinv
+
+import (
+        "fmt"
+        "net/http"
+        "strconv"
+
+        "github.com/charmbracelet/log"
+        "github.com/gin-gonic/gin"
+)
+
+func NewServer(inventory Inventory) *gin.Engine <span class="cov0" title="0">{
+        r := gin.Default()
+
+        r.GET("/items", func(c *gin.Context) </span><span class="cov0" title="0">{
+                getItems(c, inventory)
+        }</span>)
+        <span class="cov0" title="0">r.POST("/item", func(c *gin.Context) </span><span class="cov0" title="0">{
+                createItem(c, inventory)
+        }</span>)
+        <span class="cov0" title="0">r.PUT("/item/:id", func(c *gin.Context) </span><span class="cov0" title="0">{
+                updateItem(c, inventory)
+        }</span>)
+        <span class="cov0" title="0">r.DELETE("/item/:id", func(c *gin.Context) </span><span class="cov0" title="0">{
+                deleteItem(c, inventory)
+        }</span>)
+
+        <span class="cov0" title="0">return r</span>
+}
+
+func getItems(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+        category := c.Query("category")
+        location := c.Query("location")
+
+        var items []Item
+        var err error
+
+        filter := ItemFilter{
+                Category: category,
+                Location: location,
+        }
+
+        log.Info(fmt.Sprintf("Filtering items by category: %s, location: %s", category, location))
+
+        if category != "" || location != "" </span><span class="cov0" title="0">{
+                items, err = inventory.GetItemsWithFilter(filter)
+        }</span> else<span class="cov0" title="0"> {
+                items, err = inventory.GetItems()
+        }</span>
+
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+                return
+        }</span>
+        <span class="cov0" title="0">c.JSON(http.StatusOK, items)</span>
+}
+
+func createItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+        var item Item
+        if err := c.ShouldBindJSON(&amp;item); err != nil </span><span class="cov0" title="0">{
+                c.JSON(400, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov0" title="0">if err := inventory.CreateItem(item); err != nil </span><span class="cov0" title="0">{
+                c.JSON(500, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov0" title="0">c.JSON(201, item)</span>
+}
+
+func updateItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+        id := c.Param("id")
+        var item Item
+        if err := c.ShouldBindJSON(&amp;item); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        // Convert id to uint
+        <span class="cov0" title="0">uid, err := strconv.ParseUint(id, 10, 32)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">if err := inventory.UpdateItem(uint(uid), item); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov0" title="0">c.JSON(http.StatusOK, item)</span>
+}
+
+func deleteItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+        idStr := c.Param("id")
+        id, err := strconv.ParseUint(idStr, 10, 64) // base 10, up to 64 bits
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">if err := inventory.DeleteItem(uint(id)); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov0" title="0">c.JSON(http.StatusNoContent, nil)</span>
 }
 </pre>
 		
