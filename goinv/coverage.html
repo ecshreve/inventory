@@ -63,7 +63,7 @@
 				
 				<option value="file3">goinv/mock_inventory.go (97.5%)</option>
 				
-				<option value="file4">goinv/server.go (0.0%)</option>
+				<option value="file4">goinv/server.go (67.9%)</option>
 				
 				</select>
 			</div>
@@ -387,26 +387,26 @@ import (
         "github.com/gin-gonic/gin"
 )
 
-func NewServer(inventory Inventory) *gin.Engine <span class="cov0" title="0">{
+func NewServer(inventory Inventory) *gin.Engine <span class="cov8" title="1">{
         r := gin.Default()
 
-        r.GET("/items", func(c *gin.Context) </span><span class="cov0" title="0">{
+        r.GET("/items", func(c *gin.Context) </span><span class="cov8" title="1">{
                 getItems(c, inventory)
         }</span>)
-        <span class="cov0" title="0">r.POST("/item", func(c *gin.Context) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">r.POST("/item", func(c *gin.Context) </span><span class="cov8" title="1">{
                 createItem(c, inventory)
         }</span>)
-        <span class="cov0" title="0">r.PUT("/item/:id", func(c *gin.Context) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">r.PUT("/item/:id", func(c *gin.Context) </span><span class="cov8" title="1">{
                 updateItem(c, inventory)
         }</span>)
-        <span class="cov0" title="0">r.DELETE("/item/:id", func(c *gin.Context) </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">r.DELETE("/item/:id", func(c *gin.Context) </span><span class="cov8" title="1">{
                 deleteItem(c, inventory)
         }</span>)
 
-        <span class="cov0" title="0">return r</span>
+        <span class="cov8" title="1">return r</span>
 }
 
-func getItems(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+func getItems(c *gin.Context, inventory Inventory) <span class="cov8" title="1">{
         category := c.Query("category")
         location := c.Query("location")
 
@@ -422,31 +422,31 @@ func getItems(c *gin.Context, inventory Inventory) <span class="cov0" title="0">
 
         if category != "" || location != "" </span><span class="cov0" title="0">{
                 items, err = inventory.GetItemsWithFilter(filter)
-        }</span> else<span class="cov0" title="0"> {
+        }</span> else<span class="cov8" title="1"> {
                 items, err = inventory.GetItems()
         }</span>
 
-        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
                 c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
                 return
         }</span>
-        <span class="cov0" title="0">c.JSON(http.StatusOK, items)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, items)</span>
 }
 
-func createItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+func createItem(c *gin.Context, inventory Inventory) <span class="cov8" title="1">{
         var item Item
         if err := c.ShouldBindJSON(&amp;item); err != nil </span><span class="cov0" title="0">{
                 c.JSON(400, gin.H{"error": err.Error()})
                 return
         }</span>
-        <span class="cov0" title="0">if err := inventory.CreateItem(item); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := inventory.CreateItem(item); err != nil </span><span class="cov0" title="0">{
                 c.JSON(500, gin.H{"error": err.Error()})
                 return
         }</span>
-        <span class="cov0" title="0">c.JSON(201, item)</span>
+        <span class="cov8" title="1">c.JSON(201, item)</span>
 }
 
-func updateItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+func updateItem(c *gin.Context, inventory Inventory) <span class="cov8" title="1">{
         id := c.Param("id")
         var item Item
         if err := c.ShouldBindJSON(&amp;item); err != nil </span><span class="cov0" title="0">{
@@ -455,20 +455,20 @@ func updateItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0
         }</span>
 
         // Convert id to uint
-        <span class="cov0" title="0">uid, err := strconv.ParseUint(id, 10, 32)
+        <span class="cov8" title="1">uid, err := strconv.ParseUint(id, 10, 32)
         if err != nil </span><span class="cov0" title="0">{
                 c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item ID"})
                 return
         }</span>
 
-        <span class="cov0" title="0">if err := inventory.UpdateItem(uint(uid), item); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := inventory.UpdateItem(uint(uid), item); err != nil </span><span class="cov0" title="0">{
                 c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
                 return
         }</span>
-        <span class="cov0" title="0">c.JSON(http.StatusOK, item)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusOK, item)</span>
 }
 
-func deleteItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0">{
+func deleteItem(c *gin.Context, inventory Inventory) <span class="cov8" title="1">{
         idStr := c.Param("id")
         id, err := strconv.ParseUint(idStr, 10, 64) // base 10, up to 64 bits
         if err != nil </span><span class="cov0" title="0">{
@@ -476,11 +476,11 @@ func deleteItem(c *gin.Context, inventory Inventory) <span class="cov0" title="0
                 return
         }</span>
 
-        <span class="cov0" title="0">if err := inventory.DeleteItem(uint(id)); err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="1">if err := inventory.DeleteItem(uint(id)); err != nil </span><span class="cov0" title="0">{
                 c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
                 return
         }</span>
-        <span class="cov0" title="0">c.JSON(http.StatusNoContent, nil)</span>
+        <span class="cov8" title="1">c.JSON(http.StatusNoContent, nil)</span>
 }
 </pre>
 		
