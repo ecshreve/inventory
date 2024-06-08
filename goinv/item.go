@@ -3,9 +3,9 @@ package goinv
 import "fmt"
 
 type Item struct {
-	ID       int             `json:"id"`
+	ID       uint            `json:"id" gorm:"primary_key"`
 	Name     string          `json:"name"`
-	Qty      int             `json:"qty"`
+	Qty      uint            `json:"qty"`
 	Category ItemCategory    `json:"category"`
 	Location StorageLocation `json:"location"`
 }

@@ -1,12 +1,9 @@
 package goinv
 
-import "fmt"
-
-type Inventory struct {
-	Items []Item
-}
-
-// String implements the fmt.Stringer interface for Inventory
-func (i Inventory) String() string {
-	return fmt.Sprintf("%+v", i.Items)
+type Inventory interface {
+	CreateItem(item Item) error
+	GetItems() ([]Item, error)
+	UpdateItem(id uint, newItem Item) error
+	DeleteItem(id uint) error
+	GetItemsByCategory(category string) ([]Item, error)
 }
