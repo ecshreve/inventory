@@ -8,5 +8,5 @@ type Inventory interface {
 	GetItemsByCategory(category string) ([]Item, error)
 	CreateStorageLocation(location StorageLocation) error
 	GetStorageLocations() ([]StorageLocation, error)
-	Populate() error
+	Populate([]Item, []StorageLocation) error
 }

@@ -64,15 +64,15 @@ func (m *MockInventory) GetStorageLocations() ([]StorageLocation, error) {
 	return m.StorageLocations, nil
 }
 
-func (m *MockInventory) Populate() error {
-	locations := []StorageLocation{
-		{ID: 1, Description: "HalfCrate_White_1", Location: "Office"},
-		{ID: 2, Description: "FullCrate_Black_1", Location: "Office"},
-		{ID: 3, Description: "HalfCrate_White_2", Location: "Office"},
+func (m *MockInventory) Populate(items []Item, locs []StorageLocation) error {
+	for _, location := range locs {
+		if err := m.CreateStorageLocation(location); err != nil {
+			return err
+		}
 	}
 
-	for _, location := range locations {
-		if err := m.CreateStorageLocation(location); err != nil {
+	for _, item := range items {
+		if err := m.CreateItem(item); err != nil {
 			return err
 		}
 	}

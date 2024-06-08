@@ -154,17 +154,24 @@ func TestGetItemsByCategory(t *testing.T) {
 
 func TestPopulate(t *testing.T) {
 	mockInv := goinv.NewMockInventory()
-	if err := mockInv.Populate(); err != nil {
-		t.Errorf("Failed to populate inventory: %v", err)
+
+	locs := []goinv.StorageLocation{
+		{ID: 1, Description: "MockDescription", Location: "MockLocation"},
 	}
 
-	items, err := mockInv.GetItems()
-	if err != nil {
-		t.Errorf("Failed to get items: %v", err)
+	items := []goinv.Item{
+		{
+			ID:         1,
+			Name:       "MockItem",
+			Category:   goinv.Misc,
+			Qty:        5,
+			LocationID: locs[0].ID,
+			Location:   locs[0],
+		},
 	}
 
-	if len(items) != 0 {
-		t.Errorf("Expected 0 items, got %d", len(items))
+	if err := mockInv.Populate(items, locs); err != nil {
+		t.Errorf("Failed to populate storage locations: %v", err)
 	}
 
 	locations, err := mockInv.GetStorageLocations()
@@ -172,7 +179,20 @@ func TestPopulate(t *testing.T) {
 		t.Errorf("Failed to get storage locations: %v", err)
 	}
 
-	if len(locations) != 3 {
-		t.Errorf("Expected 3 locations, got %d", len(locations))
+	if len(locations) != 1 {
+		t.Errorf("Expected 1 location, got %d", len(locations))
+	}
+
+	items, err = mockInv.GetItems()
+	if err != nil {
+		t.Errorf("Failed to get items: %v", err)
+	}
+
+	if len(items) != 1 {
+		t.Errorf("Expected 1 item, got %d", len(items))
+	}
+
+	if items[0].LocationID != locs[0].ID {
+		t.Errorf("Expected item location ID to be %d, got %d", locs[0].ID, items[0].LocationID)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"goinv"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -14,13 +15,23 @@ import (
 var inventory goinv.Inventory
 
 func main() {
+	os.Setenv("ENV", "prod")
+
 	var err error
 	inventory, err = goinv.NewGormInventory()
 	if err != nil {
 		log.Fatal("Failed to initialize inventory:", err)
 	}
 
-	if err := inventory.Populate(); err != nil {
+	locs := []goinv.StorageLocation{
+		{Description: "HalfCrate_White_1", Location: "Office"},
+		{Description: "HalfCrate_White_2", Location: "Office"},
+		{Description: "FullCrate_Black_1", Location: "Office"},
+	}
+
+	items := []goinv.Item{}
+
+	if err := inventory.Populate(items, locs); err != nil {
 		log.Fatal("Failed to populate storage locations:", err)
 	}
 
