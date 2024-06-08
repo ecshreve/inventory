@@ -1,6 +1,4 @@
 import os
-import uuid
-from requests import session
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -43,18 +41,16 @@ llm = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
 db=SQLDatabase.from_uri("sqlite:///inv.db")
 toolkit = SQLDatabaseToolkit(llm=llm, db=db)
 tools = toolkit.get_tools()
-
 agent = create_react_agent(llm, tools, REACT_PROMPT)
 executor = AgentExecutor(
     agent=agent, # type: ignore
     tools=tools,
-    memory=memory,
-    return_intermediate_steps=True,
+    memory=memory,f
+    verbose=True,
     handle_parsing_errors=True,
     max_iterations=10
 )
-session_id = uuid.uuid4()
-
+session_id = "41734cdb-dab1-4030-a441-497e6a000100"
 
 # Sidebar for environment variables status
 with st.sidebar:
@@ -66,6 +62,10 @@ with st.sidebar:
             st.write(f"{stat_out} {var}")
             if on:
                 st.code(f"{vals[var]}")
+
+    # SessionID input
+    st.write("Session ID")
+    session_id = st.text_input("Enter session ID", session_id)
 
 # Reset chat history if button is clicked
 if len(msgs.messages) == 0 or st.sidebar.button("Reset chat history"):
@@ -94,6 +94,6 @@ if prompt_str := st.chat_input(placeholder="What categories does the db contain?
     # Display agent's response
     with st.chat_message("assistant"):
         st_cb = StreamlitCallbackHandler(st.container())
-        cfg = RunnableConfig(callbacks=[st_cb], metadata={"session_id": "inv-dev"})
+        cfg = RunnableConfig(callbacks=[st_cb], metadata={"session_id": session_id})
         response = executor.invoke({"input": prompt_str}, cfg)
         st.write(response["output"])
