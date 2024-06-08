@@ -21,3 +21,18 @@ A RESTful API written in Go that allows for the management of an inventory of it
 ### [Python Inventory](./pyinv/README.md)
 
 A Streamlit application written in Python that allows for the Q and A over a SQLite database containing an inventory of items.
+
+## Data
+
+The data I'm using for testing is real data from my collection of electronics equipment, and can be found in the [inventory.csv](./inventory.csv) file.
+
+### Example Data
+
+| Category | Item                    | Quantity | Location |
+|----------|-------------------------|----------|----------|
+| Adapter  | AC to USB-A with button | 1        | w1       |
+| Device   | Asus mini laptop        | 1        | w1       |
+| Cable    | USB-A to USB-C          | 8        | black    |
+| Adapter  | Single 5V 1A            | 7        | w1       |
+| Device   | Raspberry Pi 4          | 1        | w2       |
+etc ...
