@@ -20,6 +20,10 @@ func main() {
 		log.Fatal("Failed to initialize inventory:", err)
 	}
 
+	if err := inventory.Populate(); err != nil {
+		log.Fatal("Failed to populate storage locations:", err)
+	}
+
 	r := gin.Default()
 
 	r.POST("/item", func(c *gin.Context) {

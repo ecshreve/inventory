@@ -151,3 +151,28 @@ func TestGetItemsByCategory(t *testing.T) {
 		t.Errorf("Expected 1 item, got %d", len(items))
 	}
 }
+
+func TestPopulate(t *testing.T) {
+	mockInv := goinv.NewMockInventory()
+	if err := mockInv.Populate(); err != nil {
+		t.Errorf("Failed to populate inventory: %v", err)
+	}
+
+	items, err := mockInv.GetItems()
+	if err != nil {
+		t.Errorf("Failed to get items: %v", err)
+	}
+
+	if len(items) != 0 {
+		t.Errorf("Expected 0 items, got %d", len(items))
+	}
+
+	locations, err := mockInv.GetStorageLocations()
+	if err != nil {
+		t.Errorf("Failed to get storage locations: %v", err)
+	}
+
+	if len(locations) != 3 {
+		t.Errorf("Expected 3 locations, got %d", len(locations))
+	}
+}

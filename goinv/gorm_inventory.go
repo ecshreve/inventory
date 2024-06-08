@@ -16,7 +16,7 @@ func NewGormInventory() (*GormInventory, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&Item{})
+	db.AutoMigrate(&Item{}, &StorageLocation{})
 	return &GormInventory{db: db}, nil
 }
 
@@ -46,4 +46,32 @@ func (g *GormInventory) GetItemsByCategory(category string) ([]Item, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+func (g *GormInventory) CreateStorageLocation(location StorageLocation) error {
+	return g.db.Create(&location).Error
+}
+
+func (g *GormInventory) GetStorageLocations() ([]StorageLocation, error) {
+	var locations []StorageLocation
+	if err := g.db.Find(&locations).Error; err != nil {
+		return nil, err
+	}
+	return locations, nil
+}
+
+func (g *GormInventory) Populate() error {
+	locations := []StorageLocation{
+		{Description: "HalfCrate_White_1", Location: "Office"},
+		{Description: "FullCrate_Black_1", Location: "Office"},
+		{Description: "HalfCrate_White_2", Location: "Office"},
+	}
+
+	for _, location := range locations {
+		if err := g.CreateStorageLocation(location); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

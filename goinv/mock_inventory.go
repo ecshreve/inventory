@@ -5,12 +5,14 @@ package goinv
 import "fmt"
 
 type MockInventory struct {
-	Items []Item
+	Items            []Item
+	StorageLocations []StorageLocation
 }
 
 func NewMockInventory() *MockInventory {
 	return &MockInventory{
-		Items: []Item{},
+		Items:            []Item{},
+		StorageLocations: []StorageLocation{},
 	}
 }
 
@@ -51,4 +53,29 @@ func (m *MockInventory) GetItemsByCategory(category string) ([]Item, error) {
 		}
 	}
 	return items, nil
+}
+
+func (m *MockInventory) CreateStorageLocation(location StorageLocation) error {
+	m.StorageLocations = append(m.StorageLocations, location)
+	return nil
+}
+
+func (m *MockInventory) GetStorageLocations() ([]StorageLocation, error) {
+	return m.StorageLocations, nil
+}
+
+func (m *MockInventory) Populate() error {
+	locations := []StorageLocation{
+		{ID: 1, Description: "HalfCrate_White_1", Location: "Office"},
+		{ID: 2, Description: "FullCrate_Black_1", Location: "Office"},
+		{ID: 3, Description: "HalfCrate_White_2", Location: "Office"},
+	}
+
+	for _, location := range locations {
+		if err := m.CreateStorageLocation(location); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
