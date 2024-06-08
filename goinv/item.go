@@ -3,12 +3,12 @@ package goinv
 import "fmt"
 
 type Item struct {
-	ID         uint            `json:"id" gorm:"primary_key"`
+	ID         uint            `json:"id" gorm:"primaryKey"`
 	Name       string          `json:"name"`
 	Qty        uint            `json:"qty"`
 	Category   ItemCategory    `json:"category"`
 	LocationID uint            `json:"location_id"`
-	Location   StorageLocation `json:"location" gorm:"foreignKey:LocationID"`
+	Location   StorageLocation `json:"-" gorm:"foreignKey:LocationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 }
 
 // String implements the fmt.Stringer interface for Item

@@ -1,20 +1,21 @@
-// main.go
+//go:build !test
 
 package main
 
 import (
 	"goinv"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
 
 var inventory goinv.Inventory
 
 func main() {
+	log.Info("Starting goinv")
 	os.Setenv("ENV", "prod")
 
 	var err error
@@ -37,72 +38,101 @@ func main() {
 
 	r := gin.Default()
 
-	r.POST("/item", func(c *gin.Context) {
-		var item goinv.Item
-		if err := c.ShouldBindJSON(&item); err == nil {
-			if err := inventory.CreateItem(item); err == nil {
-				c.JSON(http.StatusOK, gin.H{"status": "item created"})
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
-			}
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "invalid request"})
-		}
-	})
+	r.GET("/items", getItems)
+	r.POST("/item", createItem)
+	r.PUT("/item/:id", updateItem)
+	r.DELETE("/item/:id", deleteItem)
+	r.GET("/items/category/:category", getItemsByCategory)
+	r.GET("/items/location/:location", getItemsByLocation)
 
-	r.GET("/items", func(c *gin.Context) {
-		items, err := inventory.GetItems()
-		if err == nil {
-			c.JSON(http.StatusOK, items)
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
-		}
-	})
+	log.Info("Listening on :8080")
+	r.Run()
+}
 
-	r.PUT("/item/:id", func(c *gin.Context) {
-		var newItem goinv.Item
-		id := c.Param("id")
-		uintID, err := strconv.ParseUint(id, 10, 32)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "invalid id"})
-			return
-		}
+func getItems(c *gin.Context) {
+	items, err := inventory.GetItems()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}
 
-		if err := c.ShouldBindJSON(&newItem); err == nil {
-			if err := inventory.UpdateItem(uint(uintID), newItem); err == nil {
-				c.JSON(http.StatusOK, gin.H{"status": "item updated"})
-			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
-			}
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "invalid request"})
-		}
-	})
+func createItem(c *gin.Context) {
+	var newItem goinv.Item
+	if err := c.ShouldBindJSON(&newItem); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid request"})
+		return
+	}
 
-	r.DELETE("/item/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		uintID, err := strconv.ParseUint(id, 10, 32)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"status": "invalid id"})
-			return
-		}
+	if err := inventory.CreateItem(newItem); err != nil { // Assuming CreateItem is a method in inventory
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
 
-		if err := inventory.DeleteItem(uint(uintID)); err == nil {
-			c.JSON(http.StatusOK, gin.H{"status": "item deleted"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
-		}
-	})
+	c.JSON(http.StatusCreated, gin.H{"status": "item created"})
+}
 
-	r.GET("/items/category/:category", func(c *gin.Context) {
-		category := c.Param("category")
-		items, err := inventory.GetItemsByCategory(category)
-		if err == nil {
-			c.JSON(http.StatusOK, items)
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
-		}
-	})
+func updateItem(c *gin.Context) {
+	var newItem goinv.Item
+	id := c.Param("id")
+	uintID, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid id"})
+		return
+	}
 
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	if err := c.ShouldBindJSON(&newItem); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid request"})
+		return
+	}
+
+	if err := inventory.UpdateItem(uint(uintID), newItem); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "item updated"})
+}
+
+func deleteItem(c *gin.Context) {
+	id := c.Param("id")
+	uintID, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid id"})
+		return
+	}
+
+	if err := inventory.DeleteItem(uint(uintID)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "item deleted"})
+}
+
+func getItemsByCategory(c *gin.Context) {
+	category := c.Param("category")
+	items, err := inventory.GetItemsByCategory(category)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, items)
+}
+
+func getItemsByLocation(c *gin.Context) {
+	location := c.Param("location")
+	locationID, err := strconv.ParseUint(location, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "invalid location"})
+		return
+	}
+
+	items, err := inventory.GetItemsByStorageLocation(uint(locationID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, items)
 }

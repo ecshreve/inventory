@@ -72,6 +72,14 @@ func (g *GormInventory) GetStorageLocations() ([]StorageLocation, error) {
 	return locations, nil
 }
 
+func (g *GormInventory) GetItemsByStorageLocation(locationID uint) ([]Item, error) {
+	var items []Item
+	if err := g.db.Where("location_id = ?", locationID).Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (g *GormInventory) Populate(items []Item, locs []StorageLocation) error {
 	for _, location := range locs {
 		if err := g.CreateStorageLocation(location); err != nil {

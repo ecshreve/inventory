@@ -105,6 +105,21 @@ func TestInventory(t *testing.T) {
 		}
 	})
 
+	t.Run("TestGetItemsByStorageLocation", func(t *testing.T) {
+		inv := setup(t)
+		loc := StorageLocation{Description: "TestLocationDescription1", Location: "TestLocation1"}
+		inv.CreateStorageLocation(loc)
+		item := Item{Name: "TestItem5", Category: "TestCategory5", Qty: 3, LocationID: loc.ID}
+		inv.CreateItem(item)
+		items, err := inv.GetItemsByStorageLocation(loc.ID)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+		if len(items) == 0 {
+			t.Fatalf("Expected to get items, got empty list")
+		}
+	})
+
 	t.Run("TestPopulate", func(t *testing.T) {
 		inv := setup(t)
 

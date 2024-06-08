@@ -64,6 +64,22 @@ func (m *MockInventory) GetStorageLocations() ([]StorageLocation, error) {
 	return m.StorageLocations, nil
 }
 
+func (m *MockInventory) GetItemsByStorageLocation(locationID uint) ([]Item, error) {
+	for _, location := range m.StorageLocations {
+		if location.ID == locationID {
+			var items []Item
+			for _, item := range m.Items {
+				if item.LocationID == locationID {
+					items = append(items, item)
+				}
+			}
+			return items, nil
+		}
+	}
+
+	return nil, fmt.Errorf("location not found")
+}
+
 func (m *MockInventory) Populate(items []Item, locs []StorageLocation) error {
 	for _, location := range locs {
 		if err := m.CreateStorageLocation(location); err != nil {
