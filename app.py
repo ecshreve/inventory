@@ -45,12 +45,11 @@ agent = create_react_agent(llm, tools, REACT_PROMPT)
 executor = AgentExecutor(
     agent=agent, # type: ignore
     tools=tools,
-    memory=memory,f
+    memory=memory,
     verbose=True,
     handle_parsing_errors=True,
     max_iterations=10
 )
-session_id = "41734cdb-dab1-4030-a441-497e6a000100"
 
 # Sidebar for environment variables status
 with st.sidebar:
@@ -65,7 +64,7 @@ with st.sidebar:
 
     # SessionID input
     st.write("Session ID")
-    session_id = st.text_input("Enter session ID", session_id)
+    session_id = st.text_input("Enter session ID", "dev_001")
 
 # Reset chat history if button is clicked
 if len(msgs.messages) == 0 or st.sidebar.button("Reset chat history"):

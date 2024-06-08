@@ -61,6 +61,7 @@ Previous conversation history:
 {chat_history}
 
 User: {input}
-{agent_scratchpad}
 
+{agent_scratchpad}
 """)
+
