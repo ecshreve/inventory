@@ -95,4 +95,22 @@ func TestInventory(t *testing.T) {
 			t.Fatalf("Expected to get items, got empty list")
 		}
 	})
+
+	t.Run("TestGetItemsWithFilter", func(t *testing.T) {
+		inv := setup(t)
+
+		filterCategory := "TestCategory6"
+		filterLocation := "SpecificLocation"
+
+		item := Item{Name: "TestItem6", Category: ItemCategory(filterCategory), Location: StorageLocation(filterLocation)}
+		inv.CreateItem(item)
+		filter := ItemFilter{Category: filterCategory, Location: filterLocation}
+		items, err := inv.GetItemsWithFilter(filter)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+		if len(items) == 0 {
+			t.Fatalf("Expected to get items, got empty list")
+		}
+	})
 }

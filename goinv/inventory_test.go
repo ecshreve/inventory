@@ -38,7 +38,7 @@ func TestIntegration_CreateUpdateDeleteItem(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("Expected 1 item, got %d", len(items))
 	}
-	expectedItem := "Test Item (MISC) x5 -- Test Location"
+	expectedItem := "Test Item (misc) x5 -- Test Location"
 	if fmt.Sprintf("%v", items[0]) != expectedItem {
 		t.Fatalf("Expected item to be '%s', got '%s'", expectedItem, items[0])
 	}
@@ -165,5 +165,47 @@ func TestIntegration_GetItemsByLocation(t *testing.T) {
 
 	if len(locationItems) != 2 {
 		t.Fatalf("Expected 2 items, got %d", len(locationItems))
+	}
+}
+
+func TestIntegration_GetItemsWithFilter(t *testing.T) {
+	mockInv := setupMockInventory()
+
+	items := []goinv.Item{
+		{
+			ID:       1,
+			Name:     "Test Item 1",
+			Category: goinv.Misc,
+			Qty:      5,
+			Location: "Test Location",
+		},
+		{
+			ID:       2,
+			Name:     "Test Item 2",
+			Category: goinv.Device,
+			Qty:      10,
+			Location: "Test Location",
+		},
+	}
+
+	// Create Items
+	for _, item := range items {
+		if err := mockInv.CreateItem(item); err != nil {
+			t.Fatalf("Failed to create item: %v", err)
+		}
+	}
+
+	filter := goinv.ItemFilter{
+		Category: string(goinv.Device),
+		Location: "Test Location",
+	}
+
+	filteredItems, err := mockInv.GetItemsWithFilter(filter)
+	if err != nil {
+		t.Fatalf("Failed to get items with filter: %v", err)
+	}
+
+	if len(filteredItems) != 1 {
+		t.Fatalf("Expected 1 item, got %d", len(filteredItems))
 	}
 }

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"goinv"
 	"net/http"
 	"os"
@@ -30,15 +31,31 @@ func main() {
 	r.POST("/item", createItem)
 	r.PUT("/item/:id", updateItem)
 	r.DELETE("/item/:id", deleteItem)
-	r.GET("/items/category/:category", getItemsByCategory)
-	r.GET("/items/location/:location", getItemsByLocation)
 
 	log.Info("Listening on :8080")
 	r.Run()
 }
 
 func getItems(c *gin.Context) {
-	items, err := inventory.GetItems()
+	category := c.Query("category")
+	location := c.Query("location")
+
+	var items []goinv.Item
+	var err error
+
+	filter := goinv.ItemFilter{
+		Category: category,
+		Location: location,
+	}
+
+	log.Info(fmt.Sprintf("Filtering items by category: %s, location: %s", category, location))
+
+	if category != "" || location != "" {
+		items, err = inventory.GetItemsWithFilter(filter)
+	} else {
+		items, err = inventory.GetItems()
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
 		return

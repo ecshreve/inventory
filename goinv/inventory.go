@@ -7,4 +7,5 @@ type Inventory interface {
 	DeleteItem(id uint) error
 	GetItemsByCategory(category string) ([]Item, error)
 	GetItemsByLocation(location string) ([]Item, error)
+	GetItemsWithFilter(filter ItemFilter) ([]Item, error)
 }

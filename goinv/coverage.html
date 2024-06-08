@@ -55,11 +55,11 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">goinv/gorm_inventory.go (82.6%)</option>
+				<option value="file0">goinv/gorm_inventory.go (86.5%)</option>
 				
 				<option value="file1">goinv/item.go (100.0%)</option>
 				
-				<option value="file2">goinv/mock_inventory.go (100.0%)</option>
+				<option value="file2">goinv/mock_inventory.go (97.5%)</option>
 				
 				</select>
 			</div>
@@ -80,6 +80,7 @@ package goinv
 import (
         "os"
 
+        "github.com/charmbracelet/log"
         "gorm.io/driver/sqlite"
         "gorm.io/gorm"
 )
@@ -89,6 +90,7 @@ type GormInventory struct {
 }
 
 func NewGormInventory() (*GormInventory, error) <span class="cov8" title="1">{
+        log.Info("NewGormInventory")
         db_file := "inventory.db"
         if os.Getenv("ENV") == "test" </span><span class="cov8" title="1">{
                 db_file = "test.db"
@@ -108,6 +110,7 @@ func (g *GormInventory) CreateItem(item Item) error <span class="cov8" title="1"
 }</span>
 
 func (g *GormInventory) GetItems() ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItems")
         var items []Item
         if err := g.db.Find(&amp;items).Error; err != nil </span><span class="cov0" title="0">{
                 return nil, err
@@ -124,6 +127,7 @@ func (g *GormInventory) DeleteItem(id uint) error <span class="cov8" title="1">{
 }</span>
 
 func (g *GormInventory) GetItemsByCategory(category string) ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItemsByCategory")
         var items []Item
         if err := g.db.Where("category = ?", category).Find(&amp;items).Error; err != nil </span><span class="cov0" title="0">{
                 return nil, err
@@ -132,8 +136,25 @@ func (g *GormInventory) GetItemsByCategory(category string) ([]Item, error) <spa
 }
 
 func (g *GormInventory) GetItemsByLocation(location string) ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItemsByLocation")
         var items []Item
         if err := g.db.Where("location = ?", location).Find(&amp;items).Error; err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return items, nil</span>
+}
+
+func (g *GormInventory) GetItemsWithFilter(filter ItemFilter) ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItemsWithFilter")
+        var items []Item
+        query := g.db
+        if filter.Category != "" </span><span class="cov8" title="1">{
+                query = query.Where("category = ?", filter.Category)
+        }</span>
+        <span class="cov8" title="1">if filter.Location != "" </span><span class="cov8" title="1">{
+                query = query.Where("location = ?", filter.Location)
+        }</span>
+        <span class="cov8" title="1">if err := query.Find(&amp;items).Error; err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
         <span class="cov8" title="1">return items, nil</span>
@@ -160,19 +181,19 @@ func (i Item) String() string <span class="cov8" title="1">{
 type ItemCategory string
 
 const (
-        Cable   ItemCategory = "CABLE"
-        Adapter ItemCategory = "ADAPTER"
-        Device  ItemCategory = "DEVICE"
-        Misc    ItemCategory = "MISC"
-        Unknown ItemCategory = "UNKNOWN"
+        Cable   ItemCategory = "cable"
+        Adapter ItemCategory = "adapter"
+        Device  ItemCategory = "device"
+        Misc    ItemCategory = "misc"
+        Unknown ItemCategory = "unknown"
 )
 
 type StorageLocation string
 
 const (
-        HalfCrate_White_1 StorageLocation = "HalfCrate_White_1"
-        HalfCrate_White_2 StorageLocation = "HalfCrate_White_2"
-        FullCrate_Black_1 StorageLocation = "FullCrate_Black_1"
+        half_crate_white_1 StorageLocation = "half_crate_white_1"
+        half_crate_white_2 StorageLocation = "half_crate_white_2"
+        full_crate_black_1 StorageLocation = "full_crate_black_1"
 )
 </pre>
 		
@@ -180,7 +201,11 @@ const (
 
 package goinv
 
-import "fmt"
+import (
+        "fmt"
+
+        "github.com/charmbracelet/log"
+)
 
 type MockInventory struct {
         Items            []Item
@@ -188,6 +213,7 @@ type MockInventory struct {
 }
 
 func NewMockInventory() *MockInventory <span class="cov8" title="1">{
+        log.Info("NewMockInventory")
         return &amp;MockInventory{
                 Items:            []Item{},
                 StorageLocations: []StorageLocation{},
@@ -195,15 +221,18 @@ func NewMockInventory() *MockInventory <span class="cov8" title="1">{
 }</span>
 
 func (m *MockInventory) CreateItem(item Item) error <span class="cov8" title="1">{
+        log.Info("CreateItem")
         m.Items = append(m.Items, item)
         return nil
 }</span>
 
 func (m *MockInventory) GetItems() ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItems")
         return m.Items, nil
 }</span>
 
 func (m *MockInventory) UpdateItem(id uint, newItem Item) error <span class="cov8" title="1">{
+        log.Info("UpdateItem")
         for i, item := range m.Items </span><span class="cov8" title="1">{
                 if item.ID == id </span><span class="cov8" title="1">{
                         m.Items[i] = newItem
@@ -214,6 +243,7 @@ func (m *MockInventory) UpdateItem(id uint, newItem Item) error <span class="cov
 }
 
 func (m *MockInventory) DeleteItem(id uint) error <span class="cov8" title="1">{
+        log.Info("DeleteItem")
         for i, item := range m.Items </span><span class="cov8" title="1">{
                 if item.ID == id </span><span class="cov8" title="1">{
                         m.Items = append(m.Items[:i], m.Items[i+1:]...)
@@ -224,6 +254,7 @@ func (m *MockInventory) DeleteItem(id uint) error <span class="cov8" title="1">{
 }
 
 func (m *MockInventory) GetItemsByCategory(category string) ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItemsByCategory")
         var items []Item
         for _, item := range m.Items </span><span class="cov8" title="1">{
                 if string(item.Category) == category </span><span class="cov8" title="1">{
@@ -234,11 +265,27 @@ func (m *MockInventory) GetItemsByCategory(category string) ([]Item, error) <spa
 }
 
 func (m *MockInventory) GetItemsByLocation(location string) ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItemsByLocation")
         var items []Item
         for _, item := range m.Items </span><span class="cov8" title="1">{
                 if string(item.Location) == location </span><span class="cov8" title="1">{
                         items = append(items, item)
                 }</span>
+        }
+        <span class="cov8" title="1">return items, nil</span>
+}
+
+func (m *MockInventory) GetItemsWithFilter(filter ItemFilter) ([]Item, error) <span class="cov8" title="1">{
+        log.Info("GetItemsWithFilter")
+        var items []Item
+        for _, item := range m.Items </span><span class="cov8" title="1">{
+                if filter.Category != "" &amp;&amp; string(item.Category) != filter.Category </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">if filter.Location != "" &amp;&amp; string(item.Location) != filter.Location </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">items = append(items, item)</span>
         }
         <span class="cov8" title="1">return items, nil</span>
 }
