@@ -1,21 +1,18 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
-	"strconv"
-
 	"goinv"
+	"io"
+	"os"
+	"strings"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
 )
 
-const maxWidth = 80
+var inventory goinv.Inventory
 
 var (
 	red    = lipgloss.AdaptiveColor{Light: "#FE5F86", Dark: "#FE5F86"}
@@ -31,8 +28,7 @@ type Styles struct {
 	Highlight,
 	ErrorHeaderText,
 	Help,
-	TableHeader,
-	TableRow lipgloss.Style
+	ListItem lipgloss.Style
 }
 
 func NewStyles(lg *lipgloss.Renderer) *Styles {
@@ -57,103 +53,79 @@ func NewStyles(lg *lipgloss.Renderer) *Styles {
 		Foreground(red)
 	s.Help = lg.NewStyle().
 		Foreground(lipgloss.Color("240"))
-	s.TableHeader = lg.NewStyle().
-		Foreground(lipgloss.Color("15")). // White text
-		Background(lipgloss.Color("7")).  // Gray background
-		Bold(true).
-		Padding(0, 1)
-	s.TableRow = lg.NewStyle().
-		Padding(0, 1)
+	s.ListItem = lg.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Padding(0, 1, 0, 1)
 	return &s
 }
+
+type item goinv.Item
+
+func (i item) Title() string       { return fmt.Sprintf("%d -- %s", i.Qty, i.Name) }
+func (i item) Description() string { return fmt.Sprintf("%s -- %s", i.Category, i.Location) }
+func (i item) FilterValue() string { return fmt.Sprintf("%s %s", i.Name, i.Category) }
+
+type itemDelegate struct{}
+
+func (d itemDelegate) Height() int                             { return 1 }
+func (d itemDelegate) Spacing() int                            { return 0 }
+func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(item)
+	if !ok {
+		return
+	}
+
+	str := fmt.Sprintf("%s -- %s", i.Name, i.Category)
+
+	fn := NewStyles(lipgloss.DefaultRenderer()).ListItem.Render
+	if index == m.Index() {
+		fn = func(s ...string) string {
+			return lipgloss.NewStyle().Render("> " + strings.Join(s, " "))
+		}
+	}
+
+	fmt.Fprint(w, fn(str))
+}
+
+const maxWidth = 120
 
 type state int
 
 const (
-	statusNormal state = iota
-	stateDone
+	stateMain state = iota
+	locationSelected
+	categorySelected
+	itemSelected
 )
 
 type Model struct {
-	state     state
-	lg        *lipgloss.Renderer
-	styles    *Styles
-	form      *huh.Form
-	width     int
-	inventory []goinv.Item
+	state    state
+	lg       *lipgloss.Renderer
+	styles   *Styles
+	width    int
+	errors   []error
+	list     list.Model
+	invItems map[string]goinv.Item
 }
 
 func NewModel() Model {
-	m := Model{width: maxWidth, inventory: getInventory()}
+	m := Model{width: maxWidth}
 	m.lg = lipgloss.DefaultRenderer()
 	m.styles = NewStyles(m.lg)
+	m.invItems = m.getItemsFromInventory()
 
-	m.form = huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Key("name").
-				Placeholder("Item Name").
-				Title("Item Name").
-				Prompt("Name: "),
-
-			huh.NewInput().
-				Key("qty").
-				Placeholder("Quantity").
-				Title("Quantity").
-				Prompt("Qty: ").
-				Validate(func(value string) error {
-					if value == "" || !isAllDigits(value) {
-						return fmt.Errorf("Invalid quantity")
-					}
-					return nil
-				}),
-
-			huh.NewSelect[string]().
-				Key("category").
-				Options(huh.NewOptions(
-					string(goinv.Cable),
-					string(goinv.Adapter),
-					string(goinv.Device),
-					string(goinv.Misc),
-					string(goinv.Unknown),
-				)...).
-				Title("Category"),
-
-			huh.NewSelect[string]().
-				Key("location").
-				Options(huh.NewOptions(
-					string(goinv.HalfCrate_White_1),
-					string(goinv.HalfCrate_White_2),
-					string(goinv.FullCrate_Black_1),
-					string(goinv.FullCrate_Black_2),
-					string(goinv.FullCrate_Gray_1),
-					string(goinv.HalfCrate_Gray_1),
-					string(goinv.HalfCrate_Gray_2),
-				)...).
-				Title("Location"),
-
-			huh.NewConfirm().
-				Key("done").
-				Title("All done?").
-				Validate(func(v bool) error {
-					if !v {
-						return fmt.Errorf("Please complete all fields")
-					}
-					return nil
-				}).
-				Affirmative("Yes").
-				Negative("No"),
-		),
-	).
-		WithWidth(45).
-		WithShowHelp(false).
-		WithShowErrors(false)
+	listItems := make([]list.Item, 0, len(m.invItems))
+	for _, invItem := range m.invItems {
+		listItems = append(listItems, item(invItem))
+	}
+	m.list = list.New(listItems, itemDelegate{}, 40, 40)
 
 	return m
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.form.Init()
+	return nil
 }
 
 func min(x, y int) int {
@@ -176,133 +148,104 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 
-	// Process the form
-	form, cmd := m.form.Update(msg)
-	if f, ok := form.(*huh.Form); ok {
-		m.form = f
-		cmds = append(cmds, cmd)
-	}
+	// Do stuff here
+	var cmd tea.Cmd
 
-	if m.form.State == huh.StateCompleted {
-		// Capture form data and create a new item
-		name := m.form.GetString("name")
-		qty, _ := strconv.ParseUint(m.form.GetString("qty"), 10, 64)
-		category := goinv.ItemCategory(m.form.GetString("category"))
-		location := goinv.StorageLocation(m.form.GetString("location"))
-
-		newItem := goinv.Item{
-			Name:     name,
-			Qty:      uint(qty),
-			Category: category,
-			Location: location,
-		}
-
-		// Add new item to inventory
-		m.inventory = append(m.inventory, newItem)
-
-		// Print the item details to the console (for debugging)
-		fmt.Println(newItem)
-
-		// Reset form or quit when the form is done.
-		// For now, we quit after creating an item.
-		return m, tea.Quit
-	}
+	m.list, cmd = m.list.Update(msg)
+	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
+type genericItem struct {
+	name string
+}
+
+func (g genericItem) FilterValue() string { return g.name }
+
 func (m Model) View() string {
 	s := m.styles
 
-	var formContent string
-	switch m.form.State {
-	case huh.StateCompleted:
-		formContent = s.Status.Margin(0, 1).Padding(1, 2).Width(48).Render(
-			fmt.Sprintf("%s\n\n%s", s.Highlight.Render("New Item Created!"), "Successfully created the new item. Please check your inventory database for the entry."),
-		) + "\n\n"
-	default:
-		if m.form.State == huh.StateAborted {
-			formContent = s.ErrorHeaderText.Render("Form submission failed. Please correct the errors and try again.") + "\n\n"
-		} else {
-			formContent = m.form.View()
-		}
+	categories := make(map[string]struct{})
+	for _, item := range m.invItems {
+		categories[string(item.Category)] = struct{}{}
 	}
 
-	formView := s.Base.Render(
-		s.HeaderText.Render("Create a New Item") + "\n\n" +
-			formContent +
-			"\n\n" + s.Help.Render("(esc to quit, enter to submit)") + "\n",
+	var categoriesItems []list.Item
+	for category := range categories {
+		categoriesItems = append(categoriesItems, genericItem{name: category})
+	}
+	categoriesList := list.New(categoriesItems, list.NewDefaultDelegate(), 40, 40)
+
+	errors := m.errors
+	header := m.appBoundaryView("Inventory Management System")
+	if len(errors) > 0 {
+		header = m.appErrorBoundaryView(m.errorView())
+	}
+	body := lipgloss.JoinHorizontal(lipgloss.Top, categoriesList.View(), m.list.View(), s.Status.Render(""))
+
+	footer := m.appBoundaryView("Press 'q' to quit")
+	if len(errors) > 0 {
+		footer = m.appErrorBoundaryView("")
+	}
+
+	return s.Base.Render(header + "\n" + body + "\n\n" + footer)
+}
+
+func (m Model) errorView() string {
+	var s string
+	for _, err := range m.errors {
+		s += err.Error()
+	}
+	return s
+}
+
+func (m Model) appBoundaryView(text string) string {
+	return lipgloss.PlaceHorizontal(
+		m.width,
+		lipgloss.Left,
+		m.styles.HeaderText.Render(text),
+		lipgloss.WithWhitespaceChars("/"),
+		lipgloss.WithWhitespaceForeground(indigo),
 	)
-
-	inventoryView := renderInventory(m)
-
-	return lipgloss.JoinHorizontal(lipgloss.Top, formView, inventoryView)
 }
 
-func renderInventory(m Model) string {
-	s := m.styles
-
-	header := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		s.TableHeader.Render("Item Name"),
-		s.TableHeader.Render("Quantity"),
-		s.TableHeader.Render("Category"),
-		s.TableHeader.Render("Location"),
+func (m Model) appErrorBoundaryView(text string) string {
+	return lipgloss.PlaceHorizontal(
+		m.width,
+		lipgloss.Left,
+		m.styles.ErrorHeaderText.Render(text),
+		lipgloss.WithWhitespaceChars("/"),
+		lipgloss.WithWhitespaceForeground(red),
 	)
-
-	rows := []string{header}
-	for _, item := range m.inventory {
-		rows = append(rows, lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			s.TableRow.Render(item.Name),
-			s.TableRow.Render(strconv.Itoa(int(item.Qty))),
-			s.TableRow.Render(string(item.Category)),
-			s.TableRow.Render(string(item.Location)),
-		))
-	}
-
-	return lipgloss.NewStyle().
-		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")). // Gray border
-		MarginLeft(2).
-		Render(lipgloss.JoinVertical(lipgloss.Left, rows...))
 }
 
-func isAllDigits(s string) bool {
-	for _, c := range s {
-		if c < '0' || c > '9' {
-			return false
-		}
-	}
-	return true
-}
-
-// getInventory fetches the inventory via the API
-func getInventory() []goinv.Item {
-	resp, err := http.Get("http://localhost:8080/items")
+// getItemsFromInventory fetches items from the inventory and returns them
+// as a slice of list items.
+func (m Model) getItemsFromInventory() map[string]goinv.Item {
+	items, err := inventory.GetItems()
 	if err != nil {
-		log.Fatal("Failed to fetch inventory:", err)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Fatal("Failed to fetch inventory:", err)
+		m.errors = append(m.errors, err)
 		return nil
 	}
 
-	var inventory []goinv.Item
-	err = json.NewDecoder(resp.Body).Decode(&inventory)
-	if err != nil {
-		log.Fatal("Failed to decode inventory:", err)
-		return nil
+	invItems := make(map[string]goinv.Item)
+	for _, item := range items {
+		invItems[item.Name] = item
 	}
 
-	return inventory
+	return invItems
 }
 
 func main() {
-	_, err := tea.NewProgram(NewModel()).Run()
+	var err error
+	inventory, err = goinv.NewGormInventory()
+	if err != nil {
+		fmt.Println("Failed to initialize inventory:", err)
+		os.Exit(1)
+	}
+
+	_, err = tea.NewProgram(NewModel()).Run()
 	if err != nil {
 		fmt.Println("Oh no:", err)
 		os.Exit(1)
