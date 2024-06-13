@@ -1,0 +1,6 @@
+type Mutation {
+    createItem(input: CreateItemInput!): Item!
+    createStorageLocation(input: CreateStorageLocationInput!): StorageLocation!
+    updateItem(id: ID!, input: UpdateItemInput!): Item!
+    updateStorageLocation(id: ID!, input: UpdateStorageLocationInput!): StorageLocation!
+}

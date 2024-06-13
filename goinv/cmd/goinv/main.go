@@ -1,24 +1,45 @@
 package main
 
 import (
-	"os"
-
+	"context"
 	"goinv"
+	"log"
+	"net/http"
 
-	"github.com/charmbracelet/log"
+	"goinv/ent"
+	"goinv/ent/migrate"
+
+	"entgo.io/ent/dialect"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
-func main() {
-	log.Info("Starting goinv")
-	os.Setenv("ENV", "prod")
+var SQLITE_DB = "file:file.db?mode=rwc&cache=shared&_fk=1"
 
-	inventory, err := goinv.NewGormInventory()
+func main() {
+	// Create ent.Client and run the schema migration.
+	// client, err := ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
+	client, err := ent.Open(dialect.SQLite, SQLITE_DB)
 	if err != nil {
-		log.Fatal("Failed to initialize inventory:", err)
+		log.Fatal("opening ent client", err)
+	}
+	if err := client.Schema.Create(
+		context.Background(),
+		migrate.WithGlobalUniqueID(true),
+	); err != nil {
+		log.Fatal("opening ent client", err)
 	}
 
-	srv := goinv.NewServer(inventory)
-
-	log.Info("Listening on :8080")
-	srv.Run(":8080")
+	// Configure the server and start listening on :8081.
+	srv := handler.NewDefaultServer(goinv.NewSchema(client))
+	http.Handle("/",
+		playground.Handler("inv", "/query"),
+	)
+	http.Handle("/query", srv)
+	log.Println("listening on :8081")
+	if err := http.ListenAndServe(":8081", nil); err != nil {
+		log.Fatal("http server terminated", err)
+	}
 }

@@ -55,32 +55,30 @@ var AllCategories = []string{
 
 type StorageLocation string
 
-func (l StorageLocation) String() string {
-	return string(l)
-}
-
 const (
-	HalfCrate_White_1   StorageLocation = "half_crate_white_1"
-	HalfCrate_White_2   StorageLocation = "half_crate_white_2"
-	FullCrate_Black_1   StorageLocation = "full_crate_black_1"
-	FullCrate_Black_2   StorageLocation = "full_crate_black_2"
-	FullCrate_Gray_1    StorageLocation = "full_crate_gray_1"
-	FullCrate_Stealth_1 StorageLocation = "full_crate_stealth_1"
-	FullCrate_Stealth_2 StorageLocation = "full_crate_stealth_2"
-	HalfCrate_Stealth_1 StorageLocation = "half_crate_stealth_1"
-	HalfCrate_Stealth_2 StorageLocation = "half_crate_stealth_2"
-	HalfCrate_Orange_1  StorageLocation = "half_crate_orange_1"
+	HalfCrate_White_1 StorageLocation = "half_crate_white_1"
+	HalfCrate_White_2 StorageLocation = "half_crate_white_2"
+	FullCrate_Black_1 StorageLocation = "full_crate_black_1"
+	FullCrate_Gray_1  StorageLocation = "full_crate_gray_1"
+	// FullCrate_Black_2   StorageLocation = "full_crate_black_2"
+	// FullCrate_Gray_1    StorageLocation = "full_crate_gray_1"
+	// FullCrate_Stealth_1 StorageLocation = "full_crate_stealth_1"
+	// FullCrate_Stealth_2 StorageLocation = "full_crate_stealth_2"
+	// HalfCrate_Stealth_1 StorageLocation = "half_crate_stealth_1"
+	// HalfCrate_Stealth_2 StorageLocation = "half_crate_stealth_2"
+	// HalfCrate_Orange_1  StorageLocation = "half_crate_orange_1"
 )
 
 var AllLocations = []string{
 	string(HalfCrate_White_1),
 	string(HalfCrate_White_2),
 	string(FullCrate_Black_1),
-	string(FullCrate_Black_2),
 	string(FullCrate_Gray_1),
-	string(FullCrate_Stealth_1),
-	string(FullCrate_Stealth_2),
-	string(HalfCrate_Stealth_1),
-	string(HalfCrate_Stealth_2),
-	string(HalfCrate_Orange_1),
+	// string(FullCrate_Black_2),
+	// string(FullCrate_Gray_1),
+	// string(FullCrate_Stealth_1),
+	// string(FullCrate_Stealth_2),
+	// string(HalfCrate_Stealth_1),
+	// string(HalfCrate_Stealth_2),
+	// string(HalfCrate_Orange_1),
 }
