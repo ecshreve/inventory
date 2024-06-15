@@ -38,7 +38,7 @@ memory = ConversationBufferMemory(
     chat_memory=msgs, return_messages=True, memory_key="chat_history", output_key="output"
 )
 llm = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
-db=SQLDatabase.from_uri("sqlite:///inv.db")
+db=SQLDatabase.from_uri("sqlite:///file.db")
 toolkit = SQLDatabaseToolkit(llm=llm, db=db)
 tools = toolkit.get_tools()
 agent = create_react_agent(llm, tools, REACT_PROMPT)
