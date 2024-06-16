@@ -167,7 +167,7 @@ func createSelectItemForm() *huh.Form {
 					}
 					return nil
 				}).
-				Affirmative("Yes").
+				Affirmative("+1").
 				Negative("No"),
 		).WithShowErrors(false).WithShowHelp(false),
 	)
@@ -189,14 +189,14 @@ func createNewItemForm() *huh.Form {
 		huh.NewGroup(
 			huh.NewInput().
 				Key("name").
-				Title("Item Name"),
+				Title("Item Name").Inline(true),
 			huh.NewSelect[string]().
 				Key("category").
 				Title("Item Category").
 				Options(huh.NewOptions(allCategories...)...),
 			huh.NewInput().
 				Key("quantity").
-				Title("Quantity").Value(&quantityValue),
+				Title("Quantity").Value(&quantityValue).Inline(true),
 			huh.NewSelect[string]().
 				Key("location").
 				Title("Location").
@@ -227,11 +227,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = min(msg.Width, 80)
-		m.height = min(msg.Height, 40)
+		m.height = min(msg.Height, 20)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "ctrl+c", "q":
 			return m, tea.Quit
+		case "b":
+			m.currentForm = formInitial
+			m.form = createInitialForm()
+			cmd := m.form.Init()
+			return m, cmd
 		}
 	}
 
@@ -248,7 +253,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case formInitial:
 		if m.form.State == huh.StateCompleted {
 			action := m.form.GetString("action")
-			m.status = ""
+			m.status = "press 'b' to go back to the main menu"
 
 			if action == "Select" {
 				m.currentForm = formSelectItem
