@@ -18,7 +18,7 @@ import (
 var SQLITE_DB = "file:file.db?mode=rwc&cache=shared&_fk=1"
 
 func main() {
-	log.Fatal("SKIP the database")
+	// log.Fatal("SKIP the database")
 
 	// Create ent.Client and run the schema migration.
 	// client, err := ent.Open(dialect.SQLite, "file:ent?mode=memory&cache=shared&_fk=1")
@@ -76,14 +76,14 @@ func populateSeedItems(client *ent.Client) error {
 			log.Default().Printf("invalid item: %v", itemStr)
 			continue
 		}
-		cat := itemStr[0]
-		name := itemStr[1]
-		qty, err := strconv.Atoi(itemStr[2])
+		cat := itemStr[1]
+		name := itemStr[2]
+		qty, err := strconv.Atoi(itemStr[3])
 		if err != nil {
 			log.Fatalf("invalid quantity: %s", itemStr[2])
 		}
 
-		loc := itemStr[3]
+		loc := itemStr[0]
 
 		// Get the storage location.
 		locEnt := client.StorageLocation.Query().Where(storagelocation.NameEQ(loc)).OnlyX(ctx)
