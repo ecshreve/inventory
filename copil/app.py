@@ -28,7 +28,6 @@ async def on_message(message: cl.Message):
     runnable: Runnable = cl.user_session.get("runnable")  # type:ignore
 
     msg = cl.Message(content="")
-
     async for chunk in runnable.astream(
         {"question": message.content},
         config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),

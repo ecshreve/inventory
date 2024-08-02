@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository contains a few projects related to inventory management of my personal electronics equipment.
+This repository contains a few projects related to inventory management, specifically for electronics equipment. Before I found and forked [homebox](https://github.com/ecshreve/homebox-dev) I was using this repo to experiment with different ways to manage my inventory.
 
 ### The Problem
 
@@ -21,6 +21,12 @@ A RESTful API written in Go that allows for the management of my inventory of it
 ### [Python Inventory](./pyinv/README.md)
 
 A Streamlit application written in Python that allows for the Q and A over a SQLite database containing an inventory of items.
+
+### [Copilot Inventory](./copil/README.md)
+
+A Chainlit application written in Python that allows for the Q and A over a SQLite database containing an inventory of items, and has a widget component that can be embedded in a webpage.
+
+Might try to integrate this copilot into my fork of homebox.
 
 ## Data
 
