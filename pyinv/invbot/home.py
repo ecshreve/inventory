@@ -3,7 +3,7 @@ import pandas as pd
 import sqlite3
 
 # Set up database connection
-connection = sqlite3.connect('dev.db')
+connection = sqlite3.connect('file.db')
 cursor = connection.cursor()
 
 st.title("Location Explorer")

@@ -1,12 +1,7 @@
 # pyinv
 
-pyinv is a Streamlit application written in Python that allows for the Q and A over a SQLite database containing an inventory of items.
+These apps are a little broken right now, the idea is to have a simple Q and A interface to a SQLite database containing an inventory of items. 
 
-## Usage
+The app in the `invbot` directory has other functionality like viewing the data in a pandas dataframe and seeing a summary by storage location.
 
-To run the application, execute the following command:
-
-```bash
-cd pyinv
-streamlit run app.py
-```
+![invbot](./invbot/invbot1.jpeg)
