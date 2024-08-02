@@ -1,0 +1,6 @@
+chainlit
+langchain
+langchain-community
+langgraph
+pandas
+langchain-openai
